@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Widget Hub | Dashboard</title>
+    <link rel="stylesheet" href="./style.css" />
+    
+    <!-- PWA Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./manifest.json">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Media Panel Components -->
+      <media-panel id="media-panel"></media-panel>
+
+      <!-- Status Panel Component -->
+      <status-panel id="status-panel"></status-panel>
+
+      <!-- X Slideshow Component -->
+      <x-slideshow id="x-slideshow"></x-slideshow>
+    </div>
+
+    <!-- Main Entry Script -->
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

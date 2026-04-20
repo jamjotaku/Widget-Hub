@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  /* Color Palette - Night City / Cyberpunk Inspired */
+  --bg-color: #050505;
+  --panel-bg: rgba(18, 18, 20, 0.7);
+  --accent-cyan: #00f3ff;
+  --accent-pink: #ff00ff;
+  --accent-gold: #ffb800;
+  --text-main: #e0e0e0;
+  --text-dim: #888888;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glow-cyan: 0 0 15px rgba(0, 243, 255, 0.4);
+  --glow-pink: 0 0 15px rgba(255, 0, 255, 0.4);
+
+  /* Layout Constants */
+  --sidebar-width: 40vw;
+  --header-height: 20vh;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: var(--header-height) 1fr;
+  width: 100%;
+  height: 100%;
+}
+
+/* 画面左側: MediaPanel */
+media-panel {
+  grid-row: 1 / span 2;
+  border-right: 1px solid var(--glass-border);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 30, 0.6));
+}
+
+/* 画面右上: StatusPanel */
+status-panel {
+  grid-column: 2;
+  grid-row: 1;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* 右中～下: X-Slideshow */
+x-slideshow {
+  grid-column: 2;
+  grid-row: 2;
+  background: #000;
+  overflow: hidden;
+  position: relative;
+}
+
+/* UI Utility Classes */
+.glass {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glow-text-cyan {
+  color: var(--accent-cyan);
+  text-shadow: var(--glow-cyan);
+}
+
+/* Keyframes for animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
