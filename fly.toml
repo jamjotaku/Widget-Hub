@@ -1,18 +1,23 @@
-# fly.toml app configuration file generated for widget-hub
+# fly.toml app configuration file generated for widget-hub-prototype on 2026-04-21T02:04:29Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "widget-hub-prototype" # 必要に応じてユニークな名前に変更してください
-primary_region = "nrt"
+app = 'widget-hub-prototype'
+primary_region = 'nrt'
 
 [build]
-  dockerfile = "Dockerfile"
 
 [http_service]
-  internal_port = 80
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = true
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
-  processes = ["app"]
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
