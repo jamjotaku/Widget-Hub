@@ -5,26 +5,107 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Widget Hub | Dashboard</title>
-    <link rel="stylesheet" href="./style.css" />
     
     <!-- PWA Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./style.css" />
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="theme-color" content="#050505">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Widget Hub">
   </head>
   <body>
-    <div id="app">
-      <!-- Media Panel Components -->
-      <media-panel id="media-panel"></media-panel>
-
-      <!-- Status Panel Component -->
-      <status-panel id="status-panel"></status-panel>
-
-      <!-- X Slideshow Component -->
-      <x-slideshow id="x-slideshow"></x-slideshow>
+    <!-- 1. AUTH SCREEN -->
+    <div id="login-screen" class="view-container">
+        <!-- LoginPanel will be injected here via main.js -->
     </div>
 
-    <!-- Main Entry Script -->
+    <!-- 2. DASHBOARD SCREEN (Everything inside this is isolated) -->
+    <div id="dashboard" class="view-container hidden">
+        <sidebar-nav></sidebar-nav>
+        
+        <media-panel id="media-panel"></media-panel>
+        <status-panel id="status-panel"></status-panel>
+        <x-slideshow id="x-slideshow"></x-slideshow>
+
+        <!-- Settings Button - Now locked inside dashboard -->
+        <div class="settings-btn" id="settings-trigger">
+          <ion-icon name="settings-outline"></ion-icon>
+        </div>
+
+        <!-- Settings Drawer - Now locked inside dashboard -->
+        <div class="settings-drawer" id="settings-drawer">
+            <div class="drawer-header">
+                <h3>Settings</h3>
+                <button id="close-settings"><ion-icon name="close-outline"></ion-icon></button>
+            </div>
+            <div class="drawer-content">
+                <div class="setting-item">
+                    <label>Slide Speed</label>
+                    <input type="range" id="slide-speed" min="1" max="60" step="1" value="8">
+                    <span id="speed-value" class="setting-value">8s</span>
+                </div>
+
+                <div class="setting-item">
+                    <label>Filter: Category</label>
+                    <select id="cat-input" class="modern-select">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <label>Filter: Tags</label>
+                    <select id="tags-input" class="modern-select">
+                        <option value="">All Tags</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <span class="sync-key-label">Dashboard Sync Key (UUID)</span>
+                    <div id="sync-key-val" class="sync-key-display">Loading...</div>
+                    <p style="font-size: 0.6rem; margin-top: 0.5rem; opacity: 0.6;">Copy this key to your Bookmark Site settings.</p>
+                </div>
+
+                <div class="setting-item">
+                    <label>Background Blur Intensity</label>
+                    <input type="range" id="blur-intensity" min="0" max="100" value="40">
+                </div>
+
+                <div class="settings-group">
+          <div class="settings-label">Sync Status</div>
+          <div id="extension-status" class="status-offline">Connecting...</div>
+        </div>
+
+        <!-- PWA Install Prompt -->
+        <div class="settings-group" id="install-section" style="display: none; margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div class="settings-label">Application</div>
+          <button id="pwa-install-btn" class="sync-link-btn" style="width: 100%; border: 1px solid #00f3ff; background: rgba(0,243,255,0.05); margin-top: 8px;">
+            <ion-icon name="download-outline"></ion-icon>
+            Install App
+          </button>
+        </div>
+
+        <div class="setting-item logout-section" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
+            <button id="auth-logout" class="secondary-btn" style="width: 100%; color: #ff3e3e; border-color: rgba(255,62,62,0.3);">Sign Out</button>
+        </div>
+    </div>
+    
+    <div class="drawer-actions">
+        <button id="apply-settings" class="btn-primary">Apply Changes</button>
+        <button id="footer-close-settings" class="btn-secondary">Close Settings</button>
+    </div>
+</div>
+    </div>
+
     <script type="module" src="./main.js"></script>
   </body>
 </html>

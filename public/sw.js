@@ -1,9 +1,12 @@
-const CACHE_NAME = 'widget-hub-v1';
+const CACHE_NAME = 'widget-hub-v2';
 const ASSETS = [
-  './',
-  './index.html',
-  './main.js',
-  './style.css',
+  '/',
+  '/index.html',
+  '/main.js',
+  '/style.css',
+  '/manifest.json',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   './lib/reactive.js',
   './lib/weather.js',
   './lib/supabase.js',
