@@ -11,40 +11,8 @@ class MediaPanel extends BaseElement {
     });
   }
 
-    connectedCallback() {
-    this.render(`
-      <div class="media-container animate-fade-in">
-        <div id="bg-artwork" class="artwork-bg"></div>
-        <div class="overlay"></div>
-        
-        <div class="content">
-          <div class="artwork-wrapper">
-            <img id="artwork" src="" alt="Artwork">
-          </div>
-          <div class="info">
-            <div class="title-container">
-              <h1 id="title" class="glow-text-cyan">--</h1>
-            </div>
-            <p id="artist">--</p>
-            <div class="playback-bar">
-              <div id="progress" class="bar-inner" style="width: 0%;"></div>
-            </div>
-            <div id="time-display" class="time-label">
-              <div class="live-badge">
-                <div class="pulse-dot"></div>
-                LIVE
-              </div>
-              <span id="time-text">0:00 / 0:00</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="controls-hint">
-          <span>WEB MEDIA BRIDGE ACTIVE</span>
-        </div>
-      </div>
-    `);
-
+  connectedCallback() {
+    this.render();
     this.injectStyles(`
       :host {
         display: block;
@@ -83,12 +51,12 @@ class MediaPanel extends BaseElement {
         z-index: 2;
         text-align: center;
         width: 100%;
-        max-width: 440px; /* 左側枠内で収めるための最大幅 */
+        max-width: 440px;
       }
       .artwork-wrapper {
         width: 100%;
         max-width: 380px;
-        aspect-ratio: 1 / 1; /* デフォルト正方形 */
+        aspect-ratio: 1 / 1;
         margin: 0 auto 3rem;
         border-radius: 12px;
         overflow: hidden;
@@ -102,7 +70,7 @@ class MediaPanel extends BaseElement {
       #artwork {
         width: 100%;
         height: 100%;
-        object-fit: contain; /* 横長画像でも全体を表示 */
+        object-fit: contain;
         transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
       .title-container {
@@ -116,11 +84,13 @@ class MediaPanel extends BaseElement {
         font-family: 'Orbitron', sans-serif;
         font-size: 1.8rem;
         display: inline-block;
-        padding-right: 50px; /* 流れる際の間隔 */
+        padding-right: 50px;
+        color: #fff;
+        text-shadow: var(--glow-cyan);
       }
       .marquee {
         animation: marquee 15s linear infinite;
-        will-change: transform; /* GPUアクセラレーション */
+        will-change: transform;
       }
       @keyframes marquee {
         0% { transform: translateX(0); }
@@ -142,13 +112,14 @@ class MediaPanel extends BaseElement {
       }
       .playback-bar.hidden {
         opacity: 0;
+        pointer-events: none;
       }
       .bar-inner {
         height: 100%;
         background: var(--accent-cyan);
         box-shadow: var(--glow-cyan);
         border-radius: 3px;
-        transition: width 0.3s linear; /* なめらかな同期 */
+        transition: width 0.3s linear;
       }
       .time-label {
         margin-top: 0.8rem;
@@ -162,7 +133,6 @@ class MediaPanel extends BaseElement {
         align-items: center;
         gap: 12px;
       }
-      /* LIVE Badge Styles */
       .live-badge {
         display: none;
         color: #ff3e3e;
@@ -176,7 +146,6 @@ class MediaPanel extends BaseElement {
       }
       .live-badge.visible {
         display: flex;
-        animation: fadeIn 0.5s ease forwards;
       }
       .pulse-dot {
         width: 8px;
@@ -201,49 +170,56 @@ class MediaPanel extends BaseElement {
         color: var(--accent-cyan);
         opacity: 0.4;
       }
+      .debug-info {
+        position: absolute;
+        bottom: 5px;
+        left: 10px;
+        font-size: 10px;
+        color: rgba(0, 243, 255, 0.3);
+        font-family: 'JetBrains Mono', monospace;
+        z-index: 10;
+        pointer-events: none;
+      }
     `);
 
-    // バインド設定
+    // バインド設定 (タイトル・アーティスト・アートワーク)
     this.bind('media', this.mediaInfo, (val) => {
       const titleEl = this.shadowRoot.getElementById('title');
       const artistEl = this.shadowRoot.getElementById('artist');
+      const artworkEl = this.shadowRoot.getElementById('artwork');
+      const bgArtworkEl = this.shadowRoot.getElementById('bg-artwork');
       const artworkWrapper = this.shadowRoot.querySelector('.artwork-wrapper');
       
-      // 曲名が実際に変わった時だけ DOM を更新
-      if (titleEl.getAttribute('data-title') !== val.title) {
+      if (titleEl && titleEl.getAttribute('data-title') !== val.title) {
         titleEl.setAttribute('data-title', val.title);
         titleEl.textContent = val.title;
-        artistEl.textContent = val.artist;
-        this.shadowRoot.getElementById('artwork').src = val.artwork;
-        this.shadowRoot.getElementById('bg-artwork').style.backgroundImage = `url(${val.artwork})`;
+        if (artistEl) artistEl.textContent = val.artist;
+        if (artworkEl) artworkEl.src = val.artwork;
+        if (bgArtworkEl) bgArtworkEl.style.backgroundImage = `url(${val.artwork})`;
 
-        // タイトルが長いかチェックしてスクロール開始
         setTimeout(() => {
           const containerWidth = titleEl.parentElement.offsetWidth;
           const textWidth = titleEl.scrollWidth;
           if (textWidth > containerWidth) {
-            titleEl.textContent = val.title + '     ' + val.title; // リピート表示
+            titleEl.textContent = val.title + '     ' + val.title;
             titleEl.classList.add('marquee');
           } else {
             titleEl.classList.remove('marquee');
           }
         }, 100);
 
-        // 画像比率への対応 (YouTubeサムネなら横長っぽく見せる)
         const isYoutube = val.artwork.includes('ytimg.com') || val.artwork.includes('i.ytimg.com');
-        if (isYoutube) {
-          artworkWrapper.style.aspectRatio = '16 / 9';
-        } else {
-          artworkWrapper.style.aspectRatio = '1 / 1';
+        if (artworkWrapper) {
+          artworkWrapper.style.aspectRatio = isYoutube ? '16 / 9' : '1 / 1';
         }
       }
     });
 
-    // 内部状態の管理
     this.localState = {
       currentTime: 0,
       duration: 0,
       isPaused: true,
+      isLive: false,
       lastUpdate: 0
     };
 
@@ -259,29 +235,38 @@ class MediaPanel extends BaseElement {
       const timeDisplay = this.shadowRoot.getElementById('time-text');
       const liveBadge = this.shadowRoot.querySelector('.live-badge');
       const playbackBar = this.shadowRoot.querySelector('.playback-bar');
+      const debugEl = this.shadowRoot.getElementById('debug-status');
 
       if (this.localState.isLive) {
         if (progressEl) progressEl.style.width = '100%';
         if (timeDisplay) timeDisplay.textContent = formatTime(this.localState.currentTime);
-        liveBadge.classList.add('visible');
-        playbackBar.classList.add('hidden');
-      } else if (this.localState.duration > 0) {
-        const progress = (this.localState.currentTime / this.localState.duration) * 100;
+        if (liveBadge) liveBadge.classList.add('visible');
+        if (playbackBar) playbackBar.classList.add('hidden');
+      } else {
+        const progress = this.localState.duration > 0 ? (this.localState.currentTime / this.localState.duration) * 100 : 0;
         if (progressEl) progressEl.style.width = `${Math.min(progress, 100)}%`;
         if (timeDisplay) {
-          timeDisplay.textContent = `${formatTime(this.localState.currentTime)} / ${formatTime(this.localState.duration)}`;
+          if (this.localState.duration > 0) {
+             timeDisplay.textContent = `${formatTime(this.localState.currentTime)} / ${formatTime(this.localState.duration)}`;
+          } else {
+             timeDisplay.textContent = formatTime(this.localState.currentTime);
+          }
         }
-        liveBadge.classList.remove('visible');
-        playbackBar.classList.remove('hidden');
+        if (liveBadge) liveBadge.classList.remove('visible');
+        if (playbackBar) playbackBar.classList.remove('hidden');
+      }
+      
+      if (debugEl) {
+        debugEl.textContent = `v1.2-beta | L:${this.localState.isLive} | D:${Math.floor(this.localState.duration)}`;
       }
     };
 
-    // 自律更新ループ (100ms ごとに滑らかに補間)
+    // 自律更新ループ
     setInterval(() => {
       if (!this.localState.isPaused && (this.localState.duration > 0 || this.localState.isLive)) {
         const now = Date.now();
         const delta = (now - this.localState.lastUpdate) / 1000;
-        if (delta > 0 && delta < 2) { // 異常なジャンプを防止
+        if (delta > 0 && delta < 2) {
           this.localState.currentTime += delta;
           this.localState.lastUpdate = now;
           updateUI();
@@ -289,12 +274,10 @@ class MediaPanel extends BaseElement {
       }
     }, 100);
     
-    // 拡張機能からのカスタムイベントを監視
     window.addEventListener('media-update', (e) => {
       const data = e.detail;
       const now = Date.now();
       
-      // 基本情報の更新
       this.mediaInfo.value = {
         title: data.title || 'No Title',
         artist: data.artist || 'Unknown Artist',
@@ -302,43 +285,52 @@ class MediaPanel extends BaseElement {
         artwork: data.artwork || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop'
       };
 
-      // 内部状態を新しいもので上書き（同期）
+      const title = (data.title || '').toLowerCase();
+      const hasLiveKeyword = title.includes('live') || title.includes('生放送') || title.includes('配信');
+      
       this.localState.currentTime = data.currentTime;
       this.localState.duration = data.duration;
       this.localState.isPaused = data.isPaused;
-      this.localState.isLive = data.isLive || data.duration === Infinity; // LIVE判定
+      this.localState.isLive = data.isLive === true || data.duration === Infinity || (hasLiveKeyword && data.duration > 3000);
       this.localState.lastUpdate = now;
       
       updateUI();
     });
   }
 
-  setupMediaSessionObserver() {
-    // Media Session API の更新を検知
-    // 注: PWA単体では他タブの情報を取得できないが、APIの仕様に従いハンドラをセット
-    if ('mediaSession' in navigator) {
-      const updateMetadata = () => {
-        const metadata = navigator.mediaSession.metadata;
-        if (metadata) {
-          this.mediaInfo.value = {
-            title: metadata.title || 'Unknown Title',
-            artist: metadata.artist || 'Unknown Artist',
-            album: metadata.album || '',
-            artwork: metadata.artwork && metadata.artwork.length > 0 
-              ? metadata.artwork[metadata.artwork.length - 1].src 
-              : this.mediaInfo.value.artwork
-          };
-        }
-      };
-
-      // 定期的にチェック (ブラウザ制限によりイベント駆動が難しいため)
-      setInterval(updateMetadata, 2000);
-      
-      // 初回実行
-      updateMetadata();
-    } else {
-      console.warn('Media Session API not supported');
-    }
+  render() {
+    this.shadowRoot.innerHTML = '';
+    this.shadowRoot.appendChild(this.style);
+    
+    const container = document.createElement('div');
+    container.innerHTML = `
+      <div class="media-container animate-fade-in">
+        <div id="bg-artwork" class="artwork-bg"></div>
+        <div class="overlay"></div>
+        <div class="content">
+          <div class="artwork-wrapper">
+            <img id="artwork" src="${this.mediaInfo.value.artwork}">
+          </div>
+          <div class="title-container">
+            <div id="title" data-title="${this.mediaInfo.value.title}">${this.mediaInfo.value.title}</div>
+          </div>
+          <p id="artist">${this.mediaInfo.value.artist}</p>
+          <div class="playback-bar">
+            <div id="progress" class="bar-inner" style="width: 0%"></div>
+          </div>
+          <div class="time-label">
+            <div class="live-badge">
+              <div class="pulse-dot"></div>
+              LIVE
+            </div>
+            <span id="time-text">0:00 / 0:00</span>
+          </div>
+        </div>
+        <div class="controls-hint">REMOTE SYNC ACTIVE</div>
+        <div id="debug-status" class="debug-info">v1.2-beta | Waiting...</div>
+      </div>
+    `;
+    this.shadowRoot.appendChild(container);
   }
 }
 
