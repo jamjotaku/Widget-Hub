@@ -119,16 +119,27 @@ class SidebarNav extends BaseElement {
     const navButtons = this.shadowRoot.querySelectorAll('.nav-item[data-panel]');
     navButtons.forEach(btn => {
       btn.onclick = () => {
+        // 視覚的フィードバック (スケール)
+        btn.style.transform = 'scale(0.9)';
+        setTimeout(() => btn.style.transform = '', 150);
+
         navButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const panel = btn.getAttribute('data-panel');
         window.dispatchEvent(new CustomEvent('nav-change', { detail: { panel } }));
         
-        // Simple scroll feedback for mobile/small screens
-        if (panel === 'media') {
-          document.getElementById('media-panel')?.scrollIntoView({ behavior: 'smooth' });
-        } else if (panel === 'slideshow') {
-          document.getElementById('x-slideshow')?.scrollIntoView({ behavior: 'smooth' });
+        // パネルの強調表示とスクロール
+        const targetId = panel === 'media' ? 'media-panel' : (panel === 'slideshow' ? 'x-slideshow' : 'status-panel');
+        const targetEl = document.getElementById(targetId);
+        
+        if (targetEl) {
+          // 強調エフェクト
+          targetEl.style.transition = 'box-shadow 0.5s ease';
+          targetEl.style.boxShadow = '0 0 30px rgba(0, 243, 255, 0.4)';
+          setTimeout(() => targetEl.style.boxShadow = '', 1000);
+
+          // スクロール (モバイル・タブレット用)
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       };
     });

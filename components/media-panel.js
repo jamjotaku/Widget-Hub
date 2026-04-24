@@ -10,7 +10,8 @@ class MediaPanel extends BaseElement {
       artwork: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop',
       viewerCount: 0,
       latestChat: null,
-      mediaType: 'unknown'
+      mediaType: 'unknown',
+      isLive: false
     });
     
     this.localState = {
@@ -309,46 +310,63 @@ class MediaPanel extends BaseElement {
       const chatMsg = this.shadowRoot.getElementById('chat-message');
       const syncStatus = this.shadowRoot.getElementById('sync-status');
 
+      // モード判定
+      const isLive = val.mediaType === 'youtube-live' || val.isLive === true;
+      this.setAttribute('data-is-live', isLive); // CSSセレクタ用
+
       // テーマ切り替え
-      this.setAttribute('data-type', val.mediaType);
+      // Liveの場合は強制的にyoutube-liveテーマ（赤）を適用
+      const themeType = isLive ? 'youtube-live' : val.mediaType;
+      this.setAttribute('data-type', themeType);
+      
       if (syncStatus) {
-        syncStatus.textContent = val.mediaType.toUpperCase().replace('-', ' ') + ' SYNC ACTIVE';
+        syncStatus.textContent = themeType.toUpperCase().replace('-', ' ') + ' SYNC ACTIVE';
       }
 
       // 基本情報更新
-      if (titleEl && titleEl.getAttribute('data-title') !== val.title) {
-        titleEl.setAttribute('data-title', val.title);
-        titleEl.textContent = val.title;
-        if (artistEl) artistEl.textContent = val.artist;
-        if (artworkEl) artworkEl.src = val.artwork;
-        if (bgArtworkEl) bgArtworkEl.style.backgroundImage = `url(${val.artwork})`;
-
-        setTimeout(() => {
-          const containerWidth = titleEl.parentElement.offsetWidth;
-          const textWidth = titleEl.scrollWidth;
-          if (textWidth > containerWidth) {
-            titleEl.textContent = val.title + '     ' + val.title;
-            titleEl.classList.add('marquee');
-          } else {
-            titleEl.classList.remove('marquee');
-          }
-        }, 100);
-
-        // レイアウト比率の動的調整
-        if (artworkWrapper) {
-          artworkWrapper.style.aspectRatio = val.mediaType.startsWith('youtube') ? '16 / 9' : '1 / 1';
+      if (titleEl) {
+        const isTitleChanged = titleEl.getAttribute('data-title') !== val.title;
+        if (isTitleChanged) {
+          titleEl.setAttribute('data-title', val.title);
+          titleEl.textContent = val.title;
+          
+          setTimeout(() => {
+            const containerWidth = titleEl.parentElement.offsetWidth;
+            const textWidth = titleEl.scrollWidth;
+            if (textWidth > containerWidth) {
+              titleEl.textContent = val.title + '     ' + val.title;
+              titleEl.classList.add('marquee');
+            } else {
+              titleEl.classList.remove('marquee');
+            }
+          }, 100);
         }
+      }
+      
+      if (artistEl) artistEl.textContent = val.artist;
+      if (artworkEl && artworkEl.src !== val.artwork) artworkEl.src = val.artwork;
+      if (bgArtworkEl) bgArtworkEl.style.backgroundImage = `url(${val.artwork})`;
+
+      // レイアウト比率の動的調整
+      if (artworkWrapper) {
+        artworkWrapper.style.aspectRatio = val.mediaType.startsWith('youtube') ? '16 / 9' : '1 / 1';
       }
 
       // モード別表示制御
-      const isLive = val.mediaType === 'youtube-live' || val.isLive === true;
-      console.log('[MediaPanel] isLive:', isLive, val.mediaType);
-      
       if (statsRow) statsRow.classList.toggle('visible', isLive);
       if (playbackBar) playbackBar.classList.toggle('hidden', isLive);
+      
+      const timeDisplay = this.shadowRoot.getElementById('time-text');
+      if (timeDisplay) {
+        timeDisplay.style.display = isLive ? 'none' : 'block';
+      }
+      if (playbackBar) {
+        playbackBar.style.display = isLive ? 'none' : 'block';
+      }
+
       if (viewerEl) {
         const count = typeof val.viewerCount === 'number' ? val.viewerCount : 0;
-        viewerEl.textContent = `👁 ${count.toLocaleString()}`;
+        viewerEl.textContent = `👁 ${count > 0 ? count.toLocaleString() : '---'}`;
       }
 
       // チャット演出
@@ -380,20 +398,22 @@ class MediaPanel extends BaseElement {
       const timeDisplay = this.shadowRoot.getElementById('time-text');
       const debugEl = this.shadowRoot.getElementById('debug-status');
 
-      const isLive = this.getAttribute('data-type') === 'youtube-live';
+      const isLive = this.getAttribute('data-is-live') === 'true';
       if (isLive) {
         if (progressEl) progressEl.style.width = '100%';
-        if (timeDisplay) timeDisplay.textContent = formatTime(this.localState.currentTime);
+        if (timeDisplay) timeDisplay.style.display = 'none'; // Live時は時間を隠す
       } else {
         const progress = this.localState.duration > 0 ? (this.localState.currentTime / this.localState.duration) * 100 : 0;
         if (progressEl) progressEl.style.width = `${Math.min(progress, 100)}%`;
         if (timeDisplay) {
+          timeDisplay.style.display = 'block';
           if (this.localState.duration > 0) {
              timeDisplay.textContent = `${formatTime(this.localState.currentTime)} / ${formatTime(this.localState.duration)}`;
           } else {
              timeDisplay.textContent = formatTime(this.localState.currentTime);
           }
         }
+        if (progressEl) progressEl.style.display = 'block';
       }
       if (debugEl) {
         debugEl.textContent = `v2.0-CHAMELEON | M:${this.getAttribute('data-type')} | T:${Math.floor(this.localState.currentTime)}`;
@@ -414,6 +434,8 @@ class MediaPanel extends BaseElement {
     
     window.addEventListener('media-update', (e) => {
       const data = e.detail;
+      if (!data) return;
+      
       const now = Date.now();
       
       this.mediaInfo.value = {
@@ -423,12 +445,13 @@ class MediaPanel extends BaseElement {
         artwork: data.artwork || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop',
         viewerCount: data.viewerCount || 0,
         latestChat: data.liveStats || null,
-        mediaType: data.mediaType || 'unknown'
+        mediaType: data.mediaType || 'unknown',
+        isLive: !!(data.isLive || data.is_live || data.mediaType === 'youtube-live')
       };
 
-      this.localState.currentTime = data.currentTime;
-      this.localState.duration = data.duration;
-      this.localState.isPaused = data.isPaused;
+      this.localState.currentTime = typeof data.currentTime === 'number' ? data.currentTime : 0;
+      this.localState.duration = typeof data.duration === 'number' ? data.duration : 0;
+      this.localState.isPaused = !!data.isPaused;
       this.localState.lastUpdate = now;
       
       updateUI();
