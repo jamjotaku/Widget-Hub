@@ -333,7 +333,9 @@ class MediaPanel extends BaseElement {
       }
 
       // モード別表示制御
-      const isLive = val.mediaType === 'youtube-live';
+      const isLive = val.mediaType === 'youtube-live' || val.isLive === true;
+      console.log('[MediaPanel] isLive:', isLive, val.mediaType);
+      
       if (statsRow) statsRow.classList.toggle('visible', isLive);
       if (playbackBar) playbackBar.classList.toggle('hidden', isLive);
       if (viewerEl) viewerEl.textContent = `👁 ${val.viewerCount.toLocaleString()}`;

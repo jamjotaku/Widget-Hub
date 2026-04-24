@@ -87,8 +87,8 @@ function showDashboard(user) {
       table: 'media_sync',
       filter: `user_id=eq.${user.id}` 
     }, (payload) => {
-      console.log('[Realtime] Media update received:', payload.new);
       if (payload.new) {
+        console.log('[Realtime] New Media State:', payload.new.media_type, payload.new.is_live);
         window.dispatchEvent(new CustomEvent('media-update', { 
           detail: {
             title: payload.new.title,
@@ -158,6 +158,10 @@ const closeDrawer = () => {
 
 if (trigger && drawer) trigger.onclick = () => drawer.classList.add('open');
 if (closeBtn) closeBtn.onclick = closeDrawer;
+
+window.addEventListener('toggle-settings', () => {
+  if (drawer) drawer.classList.add('open');
+});
 
 if (speedInput) {
   speedInput.oninput = (e) => {
