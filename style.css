@@ -45,6 +45,50 @@ body {
   grid-template-rows: 140px 1fr;
   height: 100vh;
   background: radial-gradient(circle at 50% 50%, #101015 0%, #050505 100%);
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  #dashboard {
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: 120px 1fr 1fr;
+    overflow-y: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+  
+  status-panel {
+    grid-column: 2 / -1;
+  }
+  
+  media-panel {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  x-slideshow {
+    grid-column: 2 / -1;
+    grid-row: 3;
+    margin: 1rem;
+    height: 600px;
+  }
+}
+
+@media (max-width: 640px) {
+  #dashboard {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+  
+  sidebar-nav {
+    display: none; /* Hide sidebar on very small screens or use drawer */
+  }
+  
+  status-panel, media-panel, x-slideshow {
+    grid-column: 1 / -1;
+  }
 }
 
 sidebar-nav {

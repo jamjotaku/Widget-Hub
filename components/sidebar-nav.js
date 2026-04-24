@@ -99,13 +99,13 @@ class SidebarNav extends BaseElement {
         <ion-icon name="flash" style="color: #fff; font-size: 1.6rem;"></ion-icon>
       </div>
       <nav class="nav-items">
-        <button class="nav-item active" title="Dashboard">
+        <button class="nav-item active" data-panel="all" title="Dashboard">
           <ion-icon name="grid-outline"></ion-icon>
         </button>
-        <button class="nav-item" title="Media Sync Status">
+        <button class="nav-item" data-panel="media" title="Media Sync Status">
           <ion-icon name="radio-outline"></ion-icon>
         </button>
-        <button class="nav-item" title="Slideshow Gallery">
+        <button class="nav-item" data-panel="slideshow" title="Slideshow Gallery">
           <ion-icon name="images-outline"></ion-icon>
         </button>
       </nav>
@@ -116,17 +116,28 @@ class SidebarNav extends BaseElement {
       </div>
     `);
 
+    const navButtons = this.shadowRoot.querySelectorAll('.nav-item[data-panel]');
+    navButtons.forEach(btn => {
+      btn.onclick = () => {
+        navButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const panel = btn.getAttribute('data-panel');
+        window.dispatchEvent(new CustomEvent('nav-change', { detail: { panel } }));
+        
+        // Simple scroll feedback for mobile/small screens
+        if (panel === 'media') {
+          document.getElementById('media-panel')?.scrollIntoView({ behavior: 'smooth' });
+        } else if (panel === 'slideshow') {
+          document.getElementById('x-slideshow')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      };
+    });
+
     const settingsBtn = this.shadowRoot.getElementById('nav-settings');
     if (settingsBtn) {
       settingsBtn.onclick = (e) => {
         console.log('[SidebarNav] Settings clicked');
-        const trigger = document.getElementById('settings-trigger');
-        if (trigger) {
-          trigger.click();
-        } else {
-          // Fallback if trigger not found
-          window.dispatchEvent(new CustomEvent('toggle-settings'));
-        }
+        window.dispatchEvent(new CustomEvent('toggle-settings'));
       };
     }
   }

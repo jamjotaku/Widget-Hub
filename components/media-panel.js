@@ -110,7 +110,9 @@ class MediaPanel extends BaseElement {
         display: inline-block;
         padding-right: 50px;
         color: #fff;
-        text-shadow: var(--theme-glow);
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        font-weight: 700;
+        letter-spacing: 1px;
       }
       .marquee {
         animation: marquee 15s linear infinite;
@@ -160,21 +162,27 @@ class MediaPanel extends BaseElement {
       .stats-row {
         display: none;
         align-items: center;
-        gap: 20px;
+        gap: 15px;
+        margin: 0.5rem 0;
       }
       .stats-row.visible {
         display: flex;
+        justify-content: center;
       }
       .live-badge {
         color: #ff3e3e;
-        font-weight: bold;
-        text-shadow: 0 0 10px rgba(255, 62, 62, 0.5);
+        font-weight: 700;
+        text-shadow: 0 0 12px rgba(255, 62, 62, 0.6);
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
         font-family: 'Orbitron', sans-serif;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         letter-spacing: 2px;
+        background: rgba(255, 62, 62, 0.1);
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 62, 62, 0.3);
       }
       .pulse-dot {
         width: 8px;
@@ -198,17 +206,17 @@ class MediaPanel extends BaseElement {
       }
       .chat-overlay {
         position: absolute;
-        bottom: 6rem;
-        width: 80%;
-        max-width: 400px;
-        background: rgba(0, 243, 255, 0.05);
-        border: 1px solid rgba(0, 243, 255, 0.2);
-        padding: 0.8rem 1.2rem;
-        border-radius: 8px;
-        backdrop-filter: blur(10px);
-        transform: translateY(20px);
+        bottom: 6.5rem;
+        width: 85%;
+        max-width: 420px;
+        background: rgba(20, 20, 25, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 1rem 1.4rem;
+        border-radius: 16px;
+        backdrop-filter: blur(25px);
+        transform: translateY(20px) scale(0.95);
         opacity: 0;
-        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         pointer-events: none;
         z-index: 3;
         display: none;
@@ -338,7 +346,10 @@ class MediaPanel extends BaseElement {
       
       if (statsRow) statsRow.classList.toggle('visible', isLive);
       if (playbackBar) playbackBar.classList.toggle('hidden', isLive);
-      if (viewerEl) viewerEl.textContent = `👁 ${val.viewerCount.toLocaleString()}`;
+      if (viewerEl) {
+        const count = typeof val.viewerCount === 'number' ? val.viewerCount : 0;
+        viewerEl.textContent = `👁 ${count.toLocaleString()}`;
+      }
 
       // チャット演出
       if (isLive && val.latestChat && val.latestChat.message) {
