@@ -2,6 +2,7 @@ import './components/login-panel.js';
 import './components/media-panel.js';
 import './components/status-panel.js';
 import './components/x-slideshow.js';
+import './components/sidebar-nav.js';
 
 // --- Supabase Config ---
 const SUPABASE_URL = "https://jimefzcdtkpwhnhjuhts.supabase.co";
@@ -14,8 +15,6 @@ const dashboard = document.getElementById('dashboard');
 const drawer = document.getElementById('settings-drawer');
 const trigger = document.getElementById('settings-trigger');
 const closeBtn = document.getElementById('close-settings');
-const footerCloseBtn = document.getElementById('footer-close-settings');
-const applyBtn = document.getElementById('apply-settings');
 const speedInput = document.getElementById('slide-speed');
 const speedValue = document.getElementById('speed-value');
 const extensionStatus = document.getElementById('extension-status');
@@ -99,7 +98,10 @@ function showDashboard(user) {
             currentTime: payload.new.current_time,
             duration: payload.new.duration,
             isPaused: payload.new.is_paused,
-            isLive: payload.new.is_live // 追加
+            isLive: payload.new.is_live,
+            mediaType: payload.new.media_type || 'unknown',
+            viewerCount: payload.new.viewer_count || 0,
+            liveStats: payload.new.live_stats || null
           } 
         }));
       }
@@ -156,8 +158,6 @@ const closeDrawer = () => {
 
 if (trigger && drawer) trigger.onclick = () => drawer.classList.add('open');
 if (closeBtn) closeBtn.onclick = closeDrawer;
-if (footerCloseBtn) footerCloseBtn.onclick = closeDrawer;
-if (applyBtn) applyBtn.onclick = closeDrawer;
 
 if (speedInput) {
   speedInput.oninput = (e) => {

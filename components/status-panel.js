@@ -7,9 +7,8 @@ class StatusPanel extends BaseElement {
     this.timeProp = new ReactiveProperty(this.getCurrentTime());
     this.dateProp = new ReactiveProperty(this.getCurrentDate());
     
-    // 天気マネージャーの初期化 (Keyは後で設定)
-    const apiKey = import.meta.env.VITE_WEATHER_API_KEY || '';
-    this.weatherManager = new WeatherManager(apiKey);
+    // 天気マネージャーの初期化 (環境変数問題を回避するため直接指定)
+    this.weatherManager = new WeatherManager('4cd52c6f9b612fca2e1686208babe30d');
   }
 
   connectedCallback() {
@@ -50,10 +49,12 @@ class StatusPanel extends BaseElement {
         font-size: 3.5rem;
         font-weight: 700;
         letter-spacing: 2px;
+        color: #00f3ff;
+        text-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
       }
       .date-text {
         font-size: 1.2rem;
-        color: var(--text-dim);
+        color: rgba(255, 255, 255, 0.5);
         font-family: 'JetBrains Mono', monospace;
       }
       .weather-section {
@@ -64,6 +65,7 @@ class StatusPanel extends BaseElement {
         padding: 1rem 1.5rem;
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
       }
       #weather-icon {
         width: 64px;
@@ -72,35 +74,38 @@ class StatusPanel extends BaseElement {
       #temp {
         font-size: 2rem;
         font-weight: 700;
-        color: var(--accent-gold);
+        color: #ffb800;
       }
       #weather-desc {
         font-size: 0.9rem;
-        color: var(--text-dim);
+        color: rgba(255, 255, 255, 0.6);
         font-family: 'Inter', sans-serif;
       }
     `);
 
-    // バインド設定
     this.bind('time', this.timeProp, (val) => {
-      this.shadowRoot.getElementById('clock').textContent = val;
+      const el = this.shadowRoot.getElementById('clock');
+      if (el) el.textContent = val;
     });
 
     this.bind('date', this.dateProp, (val) => {
-      this.shadowRoot.getElementById('date').textContent = val;
+      const el = this.shadowRoot.getElementById('date');
+      if (el) el.textContent = val;
     });
 
     this.bind('weather', this.weatherManager.weatherData, (val) => {
-      this.shadowRoot.getElementById('temp').textContent = val.temp;
-      this.shadowRoot.getElementById('weather-desc').textContent = val.description;
-      if (val.icon) {
-        const img = this.shadowRoot.getElementById('weather-icon');
-        img.src = val.icon;
-        img.style.display = 'block';
+      const tempEl = this.shadowRoot.getElementById('temp');
+      const descEl = this.shadowRoot.getElementById('weather-desc');
+      const iconEl = this.shadowRoot.getElementById('weather-icon');
+      
+      if (tempEl) tempEl.textContent = val.temp;
+      if (descEl) descEl.textContent = val.description;
+      if (val.icon && iconEl) {
+        iconEl.src = val.icon;
+        iconEl.style.display = 'block';
       }
     });
 
-    // タイマー開始
     this.startTimers();
     this.weatherManager.startAutoUpdate();
   }
@@ -118,7 +123,6 @@ class StatusPanel extends BaseElement {
   startTimers() {
     setInterval(() => {
       this.timeProp.value = this.getCurrentTime();
-      // 日付も1分おきに更新チェック（不要かもしれないが念のため）
       if (new Date().getSeconds() === 0) {
         this.dateProp.value = this.getCurrentDate();
       }
