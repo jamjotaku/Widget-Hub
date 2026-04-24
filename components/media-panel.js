@@ -292,7 +292,7 @@ class MediaPanel extends BaseElement {
           </div>
         </div>
         <div class="controls-hint" id="sync-status">REMOTE SYNC ACTIVE</div>
-        <div id="debug-status" class="debug-info">v2.0-CHAMELEON | Waiting...</div>
+        <div id="debug-status" class="debug-info">v2.1-FIX | Waiting...</div>
       </div>
     `);
 
@@ -311,7 +311,11 @@ class MediaPanel extends BaseElement {
       const syncStatus = this.shadowRoot.getElementById('sync-status');
 
       // モード判定
-      const isLive = val.mediaType === 'youtube-live' || val.isLive === true;
+      // data.isLive, data.is_live, mediaType === 'youtube-live' のいずれかが真ならライブとみなす
+      const isLive = !!(val.isLive || val.is_live || val.mediaType === 'youtube-live');
+      
+      console.log(`[MediaPanel] UI Update - isLive: ${isLive}, mediaType: ${val.mediaType}`);
+      
       this.setAttribute('data-is-live', isLive); // CSSセレクタ用
 
       // テーマ切り替え
@@ -400,8 +404,13 @@ class MediaPanel extends BaseElement {
 
       const isLive = this.getAttribute('data-is-live') === 'true';
       if (isLive) {
-        if (progressEl) progressEl.style.width = '100%';
-        if (timeDisplay) timeDisplay.style.display = 'none'; // Live時は時間を隠す
+        if (progressEl) {
+          progressEl.style.width = '100%';
+          progressEl.style.display = 'none'; // ライブ時は進捗バーも隠す（または別の見せ方にする）
+        }
+        if (timeDisplay) {
+          timeDisplay.style.display = 'none';
+        }
       } else {
         const progress = this.localState.duration > 0 ? (this.localState.currentTime / this.localState.duration) * 100 : 0;
         if (progressEl) progressEl.style.width = `${Math.min(progress, 100)}%`;
@@ -437,7 +446,15 @@ class MediaPanel extends BaseElement {
       if (!data) return;
       
       const now = Date.now();
+      const isLive = !!(data.isLive || data.is_live || data.mediaType === 'youtube-live');
       
+      console.log('[MediaPanel] Update received:', { 
+        isLive, 
+        mediaType: data.mediaType, 
+        t: Math.floor(data.currentTime), 
+        d: Math.floor(data.duration) 
+      });
+
       this.mediaInfo.value = {
         title: data.title || 'No Title',
         artist: data.artist || 'Unknown Artist',
@@ -446,13 +463,17 @@ class MediaPanel extends BaseElement {
         viewerCount: data.viewerCount || 0,
         latestChat: data.liveStats || null,
         mediaType: data.mediaType || 'unknown',
-        isLive: !!(data.isLive || data.is_live || data.mediaType === 'youtube-live')
+        isLive: isLive
       };
 
       this.localState.currentTime = typeof data.currentTime === 'number' ? data.currentTime : 0;
       this.localState.duration = typeof data.duration === 'number' ? data.duration : 0;
       this.localState.isPaused = !!data.isPaused;
       this.localState.lastUpdate = now;
+      
+      // 念のため属性も即時更新
+      this.setAttribute('data-is-live', isLive);
+      this.setAttribute('data-type', isLive ? 'youtube-live' : (data.mediaType || 'unknown'));
       
       updateUI();
     });
