@@ -292,8 +292,8 @@ class MediaPanel extends BaseElement {
           </div>
         </div>
         <div class="controls-hint" id="sync-status">REMOTE SYNC ACTIVE</div>
-        <div id="debug-status" class="debug-info">v2.8-STABLE | Waiting...</div>
-        <!-- FORCE_UPDATE_HASH: 2026-04-25T16:55:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
+        <div id="debug-status" class="debug-info">v2.9-STABLE | Waiting...</div>
+        <!-- FORCE_UPDATE_HASH: 2026-04-25T17:00:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
       </div>
     `);
 
@@ -312,10 +312,10 @@ class MediaPanel extends BaseElement {
       const syncStatus = this.shadowRoot.getElementById('sync-status');
 
       // モード判定
-      // data.isLive, data.is_live, mediaType === 'youtube-live' のいずれかが真ならライブとみなす
-      const isLive = !!(val.isLive || val.is_live || val.mediaType === 'youtube-live');
+      // data.isLive プロパティのみを信頼し、他の推論は行わない
+      const isLive = !!val.isLive;
       
-      console.log(`[MediaPanel] UI Update - isLive: ${isLive}, mediaType: ${val.mediaType}`);
+      console.log(`[MediaPanel] UI Render - isLive: ${isLive}, mediaType: ${val.mediaType}`);
       
       this.setAttribute('data-is-live', isLive); // CSSセレクタ用
 
@@ -436,7 +436,7 @@ class MediaPanel extends BaseElement {
       if (debugEl) {
         const liveAttr = this.getAttribute('data-is-live');
         const typeAttr = this.getAttribute('data-type');
-        debugEl.textContent = `v2.8-STABLE | ${typeAttr} | Live:${liveAttr} | T:${Math.floor(this.localState.currentTime)}`;
+        debugEl.textContent = `v2.9-STABLE | ${typeAttr} | L:${liveAttr} | T:${Math.floor(this.localState.currentTime)}`;
       }
     };
 
@@ -457,26 +457,31 @@ class MediaPanel extends BaseElement {
       if (!data) return;
       
       const isLiveFromServer = !!(data.isLive || data.is_live);
+      const isYoutubeLive = data.mediaType === 'youtube-live';
       const isVideoExplicit = data.mediaType === 'youtube-video' || data.mediaType === 'spotify';
       
-      // 判定の安定化:
-      // 1. サーバーから明示的にyoutube-liveまたはisLive=trueが来ている場合のみライブとみなす
-      // 2. それ以外（youtube-video等）はすべて動画として扱う
-      // 3. 不安定な推測ロジック（isSuspiciousYouTube）は廃止
-      const nextLiveState = isVideoExplicit ? false : (isLiveFromServer || data.mediaType === 'youtube-live');
+      // 究極の判定ロジック:
+      // サーバーから「動画」と明示されていれば絶対に動画。
+      // そうでなければサーバーのisLiveフラグまたはmediaTypeを優先。
+      let nextLiveState = isVideoExplicit ? false : (isLiveFromServer || isYoutubeLive);
       
       const isTitleChanged = data.title !== this.mediaInfo.value.title;
       const now_ts = Date.now();
-      let isLive = nextLiveState;
       
-      // タイトルが変わっていない場合のフリッカ防止（2秒間は状態維持）
-      if (!isTitleChanged && this.lastStateChange && (now_ts - this.lastStateChange < 2000)) {
+      // ステートロック（フリッカ防止の最終手段）:
+      // タイトルが変わっていない場合、前回の状態変更から3秒間は状態を固定する
+      let isLive = nextLiveState;
+      const LOCK_TIME = 3000; 
+      
+      if (!isTitleChanged && this.lastStateChangeTime && (now_ts - this.lastStateChangeTime < LOCK_TIME)) {
+        // ロック期間中かつタイトル不変なら、現在の表示状態を維持
         isLive = this.mediaInfo.value.isLive;
       } else if (isLive !== this.mediaInfo.value.isLive) {
-        this.lastStateChange = now_ts;
+        // 状態が変わる場合はタイムスタンプを更新してロック開始
+        this.lastStateChangeTime = now_ts;
       }
       
-      console.log('[MediaPanel] Sync Update:', { isLive, type: data.mediaType, title: data.title });
+      console.log('[MediaPanel] Sync Update:', { isLive, type: data.mediaType, title: data.title, nextLiveState });
 
       this.mediaInfo.value = {
         title: data.title || 'No Title',
