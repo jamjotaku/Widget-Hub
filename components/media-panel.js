@@ -292,8 +292,8 @@ class MediaPanel extends BaseElement {
           </div>
         </div>
         <div class="controls-hint" id="sync-status">REMOTE SYNC ACTIVE</div>
-        <div id="debug-status" class="debug-info">v2.6-STABLE | Waiting...</div>
-        <!-- FORCE_UPDATE_HASH: 2026-04-25T16:40:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
+        <div id="debug-status" class="debug-info">v2.7-STABLE | Waiting...</div>
+        <!-- FORCE_UPDATE_HASH: 2026-04-25T16:45:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
       </div>
     `);
 
@@ -434,7 +434,7 @@ class MediaPanel extends BaseElement {
         if (progressEl) progressEl.style.display = 'block';
       }
       if (debugEl) {
-        debugEl.textContent = `v2.6-STABLE | M:${this.getAttribute('data-type')} | L:${this.getAttribute('data-is-live')} | T:${Math.floor(this.localState.currentTime)}`;
+        debugEl.textContent = `v2.7-STABLE | M:${this.getAttribute('data-type')} | L:${this.getAttribute('data-is-live')} | T:${Math.floor(this.localState.currentTime)}`;
       }
     };
 
@@ -467,14 +467,27 @@ class MediaPanel extends BaseElement {
                                   (Math.abs(timeDiff - 3600) < 30) &&
                                   (data.viewerCount > 0);
 
+      // 判定の安定化（フリッカ防止）:
+      // タイトルが変わった場合は即座に状態を切り替える
+      const isTitleChanged = data.title !== this.mediaInfo.value.title;
+      
       // 動画であることが明示されている場合はライブ判定を強制的にfalseにする
-      const isLive = isVideoExplicit ? false : (isLiveFromServer || data.mediaType === 'youtube-live' || isSuspiciousYouTube);
+      const nextLiveState = isVideoExplicit ? false : (isLiveFromServer || data.mediaType === 'youtube-live' || isSuspiciousYouTube);
+      
+      // タイトルが変わっていない場合、頻繁なライブ状態の切り替えを抑制する（2秒間のクールダウン）
+      const now_ts = Date.now();
+      let isLive = nextLiveState;
+      if (!isTitleChanged && this.lastStateChange && (now_ts - this.lastStateChange < 2000)) {
+        isLive = this.mediaInfo.value.isLive; // 前の状態を維持
+      } else if (isLive !== this.mediaInfo.value.isLive) {
+        this.lastStateChange = now_ts;
+      }
       
       console.log('[MediaPanel] Update received:', { 
         isLive, 
         mediaType: data.mediaType, 
-        t: Math.floor(data.currentTime), 
-        d: Math.floor(data.duration) 
+        title: data.title,
+        isTitleChanged
       });
 
       this.mediaInfo.value = {
