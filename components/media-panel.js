@@ -292,8 +292,8 @@ class MediaPanel extends BaseElement {
           </div>
         </div>
         <div class="controls-hint" id="sync-status">REMOTE SYNC ACTIVE</div>
-        <div id="debug-status" class="debug-info">v2.7-STABLE | Waiting...</div>
-        <!-- FORCE_UPDATE_HASH: 2026-04-25T16:45:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
+        <div id="debug-status" class="debug-info">v2.8-STABLE | Waiting...</div>
+        <!-- FORCE_UPDATE_HASH: 2026-04-25T16:55:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
       </div>
     `);
 
@@ -434,7 +434,9 @@ class MediaPanel extends BaseElement {
         if (progressEl) progressEl.style.display = 'block';
       }
       if (debugEl) {
-        debugEl.textContent = `v2.7-STABLE | M:${this.getAttribute('data-type')} | L:${this.getAttribute('data-is-live')} | T:${Math.floor(this.localState.currentTime)}`;
+        const liveAttr = this.getAttribute('data-is-live');
+        const typeAttr = this.getAttribute('data-type');
+        debugEl.textContent = `v2.8-STABLE | ${typeAttr} | Live:${liveAttr} | T:${Math.floor(this.localState.currentTime)}`;
       }
     };
 
@@ -454,41 +456,27 @@ class MediaPanel extends BaseElement {
       const data = e.detail;
       if (!data) return;
       
-      const now = Date.now();
-      
       const isLiveFromServer = !!(data.isLive || data.is_live);
       const isVideoExplicit = data.mediaType === 'youtube-video' || data.mediaType === 'spotify';
       
-      // フォールバック判定：サーバーからのフラグがなくても、YouTubeの特有の挙動からライブを推測する
-      const timeDiff = (data.duration || 0) - (data.currentTime || 0);
-      // 残り1時間かつ視聴者がいる場合
-      const isSuspiciousYouTube = (data.mediaType === 'unknown' || !data.mediaType) && 
-                                  (data.duration > 3600) && 
-                                  (Math.abs(timeDiff - 3600) < 30) &&
-                                  (data.viewerCount > 0);
-
-      // 判定の安定化（フリッカ防止）:
-      // タイトルが変わった場合は即座に状態を切り替える
+      // 判定の安定化:
+      // 1. サーバーから明示的にyoutube-liveまたはisLive=trueが来ている場合のみライブとみなす
+      // 2. それ以外（youtube-video等）はすべて動画として扱う
+      // 3. 不安定な推測ロジック（isSuspiciousYouTube）は廃止
+      const nextLiveState = isVideoExplicit ? false : (isLiveFromServer || data.mediaType === 'youtube-live');
+      
       const isTitleChanged = data.title !== this.mediaInfo.value.title;
-      
-      // 動画であることが明示されている場合はライブ判定を強制的にfalseにする
-      const nextLiveState = isVideoExplicit ? false : (isLiveFromServer || data.mediaType === 'youtube-live' || isSuspiciousYouTube);
-      
-      // タイトルが変わっていない場合、頻繁なライブ状態の切り替えを抑制する（2秒間のクールダウン）
       const now_ts = Date.now();
       let isLive = nextLiveState;
+      
+      // タイトルが変わっていない場合のフリッカ防止（2秒間は状態維持）
       if (!isTitleChanged && this.lastStateChange && (now_ts - this.lastStateChange < 2000)) {
-        isLive = this.mediaInfo.value.isLive; // 前の状態を維持
+        isLive = this.mediaInfo.value.isLive;
       } else if (isLive !== this.mediaInfo.value.isLive) {
         this.lastStateChange = now_ts;
       }
       
-      console.log('[MediaPanel] Update received:', { 
-        isLive, 
-        mediaType: data.mediaType, 
-        title: data.title,
-        isTitleChanged
-      });
+      console.log('[MediaPanel] Sync Update:', { isLive, type: data.mediaType, title: data.title });
 
       this.mediaInfo.value = {
         title: data.title || 'No Title',

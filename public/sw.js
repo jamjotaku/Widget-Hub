@@ -1,4 +1,4 @@
-const CACHE_NAME = 'widget-hub-v2.1';
+const CACHE_NAME = 'widget-hub-v2.8';
 const ASSETS = [
   '/',
   '/index.html',
