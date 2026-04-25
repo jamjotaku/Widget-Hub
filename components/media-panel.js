@@ -292,7 +292,8 @@ class MediaPanel extends BaseElement {
           </div>
         </div>
         <div class="controls-hint" id="sync-status">REMOTE SYNC ACTIVE</div>
-        <div id="debug-status" class="debug-info">v2.1-FIX | Waiting...</div>
+        <div id="debug-status" class="debug-info">v2.6-STABLE | Waiting...</div>
+        <!-- FORCE_UPDATE_HASH: 2026-04-25T16:40:00Z - This is a large dummy comment to ensure the build hash changes and bypasses any stubborn browser or service worker caches. 1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ -->
       </div>
     `);
 
@@ -370,7 +371,14 @@ class MediaPanel extends BaseElement {
 
       if (viewerEl) {
         const count = typeof val.viewerCount === 'number' ? val.viewerCount : 0;
-        viewerEl.textContent = `👁 ${count > 0 ? count.toLocaleString() : '---'}`;
+        if (count > 0) {
+          viewerEl.textContent = `👁 ${count.toLocaleString()}`;
+          this.lastViewerCount = count;
+        } else if (this.lastViewerCount) {
+          viewerEl.textContent = `👁 ${this.lastViewerCount.toLocaleString()}`;
+        } else {
+          viewerEl.textContent = `👁 ---`;
+        }
       }
 
       // チャット演出
@@ -403,6 +411,7 @@ class MediaPanel extends BaseElement {
       const debugEl = this.shadowRoot.getElementById('debug-status');
 
       const isLive = this.getAttribute('data-is-live') === 'true';
+
       if (isLive) {
         if (progressEl) {
           progressEl.style.width = '100%';
@@ -425,7 +434,7 @@ class MediaPanel extends BaseElement {
         if (progressEl) progressEl.style.display = 'block';
       }
       if (debugEl) {
-        debugEl.textContent = `v2.0-CHAMELEON | M:${this.getAttribute('data-type')} | T:${Math.floor(this.localState.currentTime)}`;
+        debugEl.textContent = `v2.6-STABLE | M:${this.getAttribute('data-type')} | L:${this.getAttribute('data-is-live')} | T:${Math.floor(this.localState.currentTime)}`;
       }
     };
 
@@ -446,7 +455,20 @@ class MediaPanel extends BaseElement {
       if (!data) return;
       
       const now = Date.now();
-      const isLive = !!(data.isLive || data.is_live || data.mediaType === 'youtube-live');
+      
+      const isLiveFromServer = !!(data.isLive || data.is_live);
+      const isVideoExplicit = data.mediaType === 'youtube-video' || data.mediaType === 'spotify';
+      
+      // フォールバック判定：サーバーからのフラグがなくても、YouTubeの特有の挙動からライブを推測する
+      const timeDiff = (data.duration || 0) - (data.currentTime || 0);
+      // 残り1時間かつ視聴者がいる場合
+      const isSuspiciousYouTube = (data.mediaType === 'unknown' || !data.mediaType) && 
+                                  (data.duration > 3600) && 
+                                  (Math.abs(timeDiff - 3600) < 30) &&
+                                  (data.viewerCount > 0);
+
+      // 動画であることが明示されている場合はライブ判定を強制的にfalseにする
+      const isLive = isVideoExplicit ? false : (isLiveFromServer || data.mediaType === 'youtube-live' || isSuspiciousYouTube);
       
       console.log('[MediaPanel] Update received:', { 
         isLive, 
@@ -466,12 +488,17 @@ class MediaPanel extends BaseElement {
         isLive: isLive
       };
 
+      // ライブでなくなった場合は視聴者数バッファをリセット
+      if (!isLive) {
+        this.lastViewerCount = 0;
+      }
+
       this.localState.currentTime = typeof data.currentTime === 'number' ? data.currentTime : 0;
       this.localState.duration = typeof data.duration === 'number' ? data.duration : 0;
       this.localState.isPaused = !!data.isPaused;
       this.localState.lastUpdate = now;
       
-      // 念のため属性も即時更新
+      // 属性を即時更新（これで updateUI がこの値を参照する）
       this.setAttribute('data-is-live', isLive);
       this.setAttribute('data-type', isLive ? 'youtube-live' : (data.mediaType || 'unknown'));
       
